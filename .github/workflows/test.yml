@@ -1,4 +1,4 @@
-name: CI
+name: Test & Publish Dev Image
 
 on:
   pull_request:

@@ -1,6 +1,4 @@
-name: 'SARIF Converter'
-description: 'Convert SARIF files to other formats using the sarif-converter CLI.'
-author: 'buzurg'
+author: 'Buzurgmehr Arjmandi'
 inputs:
   sarif:
     description: 'Path (relative to the runner temp) to the source SARIF file.'
@@ -14,7 +12,7 @@ inputs:
   image:
     description: 'Docker image to use. Defaults to latest'
     required: false
-    default: 'ghcr.io/buzurg/sarif-converter:latest'
+    default: 'ghcr.io/b-zurg/sarif-converter:latest'
 runs:
   using: 'composite'
   steps:
