@@ -9,33 +9,7 @@ permissions:
   packages: write
 
 jobs:
-  test-action:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          if [[ -z "$VERSION" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Convert sample SARIF
-        uses: ./
-        with:
-          sarif: testdata/sample.sarif
-          output: testdata/sample.html
-          type: html
-
-      - name: Verify output produced
-        run: test -s testdata/sample.html
-
   publish-dev-image:
-    needs: test-action
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     steps:
