@@ -3,10 +3,10 @@ description: 'Convert SARIF files to other formats using the sarif-converter CLI
 author: 'buzurg'
 inputs:
   sarif:
-    description: 'Path (relative to the repository root) to the source SARIF file.'
+    description: 'Path (relative to the runner temp) to the source SARIF file.'
     required: true
   output:
-    description: 'Path (relative to the repository root) where the converted file will be written.'
+    description: 'Path (relative to runner temp) where the converted file will be written.'
     required: true
   type:
     description: 'Output format passed to sarif-converter via --type.'
@@ -27,7 +27,6 @@ runs:
         docker run --rm \
           -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
           -v "$RUNNER_TEMP:$RUNNER_TEMP" \
-          -v "$(dirname "${{ steps.paths.outputs.output }}")":"$(dirname "${{ steps.paths.outputs.output }}")" \
           -w "$GITHUB_WORKSPACE" \
           "${{ inputs.image }}" \
           --type "${{ inputs.type }}" \
