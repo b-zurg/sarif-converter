@@ -1,6 +1,6 @@
 # sarif-converter GitHub Action
 
-Run the `sarif-converter` CLI directly from your workflows using the published Docker image maintained in this repository. The Action converts SARIF files to other formats (HTML by default) without installing additional tooling.
+Run the `sarif-converter` (link)[https://gitlab.com/ignis-build/sarif-converter] CLI directly from your workflows using the published Docker image maintained in this repository. The Action converts SARIF files to other formats (HTML by default) without installing additional tooling.
 
 ## Workflow Usage
 
