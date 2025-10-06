@@ -13,6 +13,8 @@ on:
 permissions:
   contents: read
   packages: write
+  issues: read
+  pull-requests: read
 
 jobs:
   publish-dev-image:
@@ -21,18 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          
-      - name: Check version bump
-        uses: rayepps/require-semver-bump@v1
+      - name: Validate release metadata
+        uses: jefflinse/pr-semver-bump@v1.6.0
         with:
-          github-token: ${{ github.token }}
-          file: ./VERSION
-          pattern: '^\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$'
+          mode: validate
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          major-label: major
+          minor-label: minor
+          patch-label: patch
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -46,14 +44,14 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }}
+          tags: ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ github.event.pull_request.number }}
 
       - name: Convert sample SARIF using PR image
         run: |
           docker run --rm \
             -v "$PWD:$PWD" \
             -w "$PWD" \
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }} \
+            ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ github.event.pull_request.number }} \
             --type html \
             testdata/sample.sarif \
             testdata/sample.html
