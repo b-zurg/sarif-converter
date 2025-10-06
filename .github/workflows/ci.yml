@@ -1,8 +1,17 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -80,7 +89,6 @@ jobs:
         run: test -s testdata/sample.html
 
   publish-release-image:
-    needs: test-action
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
