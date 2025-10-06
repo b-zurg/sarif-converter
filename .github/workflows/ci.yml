@@ -9,9 +9,6 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -97,35 +94,3 @@ jobs:
 
       - name: Verify PR image output produced
         run: test -s testdata/sample.html
-
-  publish-release-image:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          if [[ -z "$VERSION" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push release image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:latest
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:${{ steps.version.outputs.version }}
