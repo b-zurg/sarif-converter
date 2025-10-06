@@ -1,16 +1,23 @@
 name: CI
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  test-action:
+  publish-dev-image:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
@@ -18,45 +25,14 @@ jobs:
         id: version
         run: |
           VERSION=$(cat VERSION)
-          if [[ -z "$VERSION" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Convert sample SARIF
-        uses: ./
-        with:
-          sarif: testdata/sample.sarif
-          output: testdata/sample.html
-          type: html
-
-      - name: Verify output produced
-        run: test -s testdata/sample.html
-
-  publish-dev-image:
-    needs: test-action
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-
+          
       - name: Check version bump
         uses: rayepps/require-semver-bump@v1
         with:
           github-token: ${{ github.token }}
-          file: VERSION
-          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          if [[ -z "$VERSION" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          file: ./VERSION
+          pattern: '^\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$'
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -84,36 +60,3 @@ jobs:
 
       - name: Verify PR image output produced
         run: test -s testdata/sample.html
-
-  publish-release-image:
-    needs: test-action
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          if [[ -z "$VERSION" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push release image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:latest
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:${{ steps.version.outputs.version }}
