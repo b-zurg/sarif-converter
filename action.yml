@@ -1,4 +1,6 @@
 author: 'Buzurgmehr Arjmandi'
+name: 'SARIF Converter'
+description: 'Convert SARIF files to other formats using sarif-converter.'
 inputs:
   sarif:
     description: 'Path (relative to the runner temp) to the source SARIF file.'
