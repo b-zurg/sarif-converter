@@ -42,12 +42,13 @@ jobs:
           echo "--- BASE ./VERSION ---"
           git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
           git show origin/${{ github.event.pull_request.base.ref }}:./VERSION || echo "(missing)"
+          
       - name: Check version bump
         uses: rayepps/require-semver-bump@v1
         with:
           github-token: ${{ github.token }}
           file: ./VERSION
-          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+          pattern: '^\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$'
 
 
       - name: Determine push capability
