@@ -11,19 +11,27 @@ inputs:
   type:
     description: 'Output format passed to sarif-converter via --type.'
     default: 'html'
-  image: 
+  image:
     description: 'Docker image to use. Defaults to latest'
     required: false
     default: 'ghcr.io/buzurg/sarif-converter:latest'
 runs:
-  using: 'docker'
-  image: '${{ inputs.image }}'
-  entrypoint: '/usr/local/bin/sarif-converter'
-  args:
-    - '--type'
-    - '${{ inputs.type }}'
-    - '${{ inputs.sarif }}'
-    - '${{ inputs.output }}'
+  using: 'composite'
+  steps:
+    - name: Pull converter image
+      run: docker pull "${{ inputs.image }}"
+      shell: bash
+
+    - name: Run SARIF converter
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+          -w "$GITHUB_WORKSPACE" \
+          "${{ inputs.image }}" \
+          --type "${{ inputs.type }}" \
+          "${{ inputs.sarif }}" \
+          "${{ inputs.output }}"
+      shell: bash
 branding:
   icon: 'file-text'
   color: 'blue'
