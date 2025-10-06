@@ -35,7 +35,6 @@ jobs:
           pattern: '^\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$'
 
       - name: Log in to GHCR
-        if: ${{ steps.push.outputs.can_push == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -43,7 +42,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push PR image
-        if: ${{ steps.push.outputs.can_push == 'true' }}
         uses: docker/build-push-action@v5
         with:
           context: .
