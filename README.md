@@ -1,43 +1,73 @@
-# sarif-converter Docker Image
+# sarif-converter GitHub Action
 
-This image bundles the standalone `sarif-converter` CLI so you can run the tool
-without a manual install. It downloads the latest published Linux binary from
-the upstream project at build time.
+Run the `sarif-converter` CLI directly from your workflows using the published Docker image maintained in this repository. The Action converts SARIF files to other formats (HTML by default) without installing additional tooling.
 
-## Build
+## Workflow Usage
+
+Add the Action to a workflow step. Provide the input SARIF file, desired output path, and (optionally) an output format.
+
+```yaml
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert SARIF to HTML
+        uses: buzurg/sarif-converter@v1
+        with:
+          sarif: reports/scan.sarif
+          output: reports/scan.html
+          type: html
+```
+
+### Inputs
+
+- `sarif` (required): Path to the SARIF source file relative to the repository root.
+- `output` (required): Output path relative to the repository root. Ensure the parent directory exists.
+- `type` (optional, default `html`): Value passed to `sarif-converter --type`.
+- `image` (optional, default `ghcr.io/buzurg/sarif-converter:latest`): Container image to run. Override to test a pre-release tag.
+
+When referencing a custom image, confirm the tag exists in GHCR before sharing the workflow.
+
+## Docker Image
+
+The Action relies on a slim Docker image that packages the Linux `sarif-converter` binary. You can use the same image locally.
+
+### Run Locally
+
+Mount your project and execute the CLI as you would in CI:
+
+```bash
+docker run --rm -v "$PWD:/work" -w /work ghcr.io/buzurg/sarif-converter:latest --type html input.sarif output.html
+```
+
+Running without arguments prints the bundled help text:
+
+```bash
+docker run --rm ghcr.io/buzurg/sarif-converter:latest
+```
+
+### Build Locally
 
 ```bash
 docker build -t sarif-converter:latest .
 ```
 
-## Usage
-
-Mount your SARIF input file and desired output location into the container and
-run the CLI directly:
+To pin a specific upstream release during the build, override the download URL:
 
 ```bash
-docker run --rm -v "$PWD:/work" -w /work sarif-converter:latest --type html intput.sarif output.json
+docker build
 ```
 
-The image defaults to showing the help text if no arguments are provided:
+### Image Details
 
-```bash
-docker run --rm sarif-converter:latest
-```
+- Linux x86_64 binary copied into a minimal scratch-based image.
+- Analyzer tooling is not included; run your analyzer separately and feed its SARIF output into `sarif-converter`.
 
-## Environment Variables
+## Publishing & Versioning
 
-You can override the download URL at build time to pin a specific release:
-
-```bash
-docker build \
-  --build-arg SARIF_CONVERTER_DOWNLOAD_URL=https://gitlab.com/ignis-build/sarif-converter/-/releases/v0.9.0/downloads/bin/sarif-converter-linux \
-  -t sarif-converter:v0.9.0 .
-```
-
-## Notes
-
-- The published binary targets Linux x86_64; this image uses a Debian base for
-  compatibility with the glibc-linked release.
-- The container does not include analyzers; run your analyzer of choice outside
-  or inside the container and feed the generated SARIF file into `sarif-converter`.
+- Update the `VERSION` file with the semantic version (for example `0.9.5`) before merging to `main`.
+- Pull requests must bump `VERSION` higher than the value on the target branch; CI fails otherwise.
+- On pushes to `main`, CI publishes `ghcr.io/<owner>/sarif-converter:latest` and `:v<version>`.
+- Pull requests from this repository publish a preview tag `dev-<version>` derived from the `VERSION` file and overwrite the same tag on subsequent updates.
+- Pull requests from forks cannot push preview images because the token has read-only package scope.

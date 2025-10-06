@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+  publish-dev-image:
+    needs: test-action
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version bump
+        uses: rayepps/require-semver-bump@v1
+        with:
+          github-token: ${{ github.token }}
+          file: VERSION
+          pattern: > 
+            '^version=([0-9]+\.[0-9]+\.[0-9]+)$'
+          
+      - name: Read version
+        id: version
+        uses: ./.github/actions/read-version
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push PR image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }}
+
+      - name: Convert sample SARIF
+        uses: ./
+        with:
+          sarif: testdata/sample.sarif
+          output: testdata/sample.html
+          type: html
+          image: ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }}
+
+      - name: Verify output produced
+        run: test -s testdata/sample.html
+
+  publish-release-image:
+    needs: test-action
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        uses: ./.github/actions/read-version
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push release image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/sarif-converter:latest
+            ghcr.io/${{ github.repository_owner }}/sarif-converter:${{ steps.version.outputs.version }}

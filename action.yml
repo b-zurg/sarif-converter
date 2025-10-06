@@ -1,0 +1,29 @@
+name: 'SARIF Converter'
+description: 'Convert SARIF files to other formats using the sarif-converter CLI.'
+author: 'buzurg'
+inputs:
+  sarif:
+    description: 'Path (relative to the repository root) to the source SARIF file.'
+    required: true
+  output:
+    description: 'Path (relative to the repository root) where the converted file will be written.'
+    required: true
+  type:
+    description: 'Output format passed to sarif-converter via --type.'
+    default: 'html'
+  image: 
+    description: 'Docker image to use. Defaults to latest'
+    required: false
+    default: 'ghcr.io/buzurg/sarif-converter:latest'
+runs:
+  using: 'docker'
+  image: '${{ inputs.image }}'
+  entrypoint: '/usr/local/bin/sarif-converter'
+  args:
+    - '--type'
+    - '${{ inputs.type }}'
+    - '${{ inputs.sarif }}'
+    - '${{ inputs.output }}'
+branding:
+  icon: 'file-text'
+  color: 'blue'

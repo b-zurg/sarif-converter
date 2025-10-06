@@ -1,0 +1,28 @@
+name: 'Read Version'
+description: 'Read a version string from the VERSION file and expose it as an output.'
+inputs:
+  path:
+    description: 'Path to the version file.'
+    required: false
+    default: 'VERSION'
+outputs:
+  version:
+    description: 'Version string read from the provided file.'
+    value: ${{ steps.read.outputs.version }}
+runs:
+  using: 'composite'
+  steps:
+    - id: read
+      shell: bash
+      run: |
+        FILE='${{ inputs.path }}'
+        if [ ! -f "$FILE" ]; then
+          echo "Version file $FILE not found" >&2
+          exit 1
+        fi
+        VERSION=$(tr -d '\n' < "$FILE")
+        if [ -z "$VERSION" ]; then
+          echo "Version file $FILE is empty" >&2
+          exit 1
+        fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
