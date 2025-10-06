@@ -11,7 +11,7 @@ permissions:
 jobs:
   publish-dev-image:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +32,17 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Determine push capability
+        id: push
+        run: |
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]]; then
+            echo "can_push=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Log in to GHCR
+        if: ${{ steps.push.outputs.can_push == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -40,10 +50,20 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push PR image
+        if: ${{ steps.push.outputs.can_push == 'true' }}
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
+          tags: ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }}
+
+      - name: Build PR image locally
+        if: ${{ steps.push.outputs.can_push != 'true' }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
           tags: ghcr.io/${{ github.repository_owner }}/sarif-converter:dev-${{ steps.version.outputs.version }}
 
       - name: Convert sample SARIF using PR image
