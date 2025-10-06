@@ -1,4 +1,4 @@
-name: Test & Publish Dev Image
+name: Test
 
 on:
   pull_request:
@@ -31,6 +31,7 @@ jobs:
           major-label: major
           minor-label: minor
           patch-label: patch
+          noop-labels: no-bump
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

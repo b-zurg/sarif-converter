@@ -28,6 +28,7 @@ jobs:
           major-label: major
           minor-label: minor
           patch-label: patch
+          noop-labels: no-bump
 
       - name: Log in to GHCR
         if: steps.bump.outputs.skipped != 'true'

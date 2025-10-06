@@ -1,10 +1,8 @@
 # sarif-converter GitHub Action
 
-Run the `sarif-converter` (link)[https://gitlab.com/ignis-build/sarif-converter] CLI directly from your workflows using the published Docker image maintained in this repository. The Action converts SARIF files to other formats (HTML by default) without installing additional tooling.
+Run the [`sarif-converter`](https://gitlab.com/ignis-build/sarif-converter) CLI directly from your workflows using this Docker-based GitHub Action. It converts SARIF files to other formats (HTML by default) without installing additional tooling on the runner.
 
-## Workflow Usage
-
-Add the Action to a workflow step. Provide the input SARIF file, desired output path, and (optionally) an output format.
+## Basic Usage
 
 ```yaml
 jobs:
@@ -27,47 +25,19 @@ jobs:
 - `type` (optional, default `html`): Value passed to `sarif-converter --type`.
 - `image` (optional, default `ghcr.io/buzurg/sarif-converter:latest`): Container image to run. Override to test a pre-release tag.
 
-When referencing a custom image, confirm the tag exists in GHCR before sharing the workflow.
+## CI Workflows
 
-## Docker Image
+Two workflows ship with the repository and demonstrate how to automate publishing.
 
-The Action relies on a slim Docker image that packages the Linux `sarif-converter` binary. You can use the same image locally.
-
-### Run Locally
-
-Mount your project and execute the CLI as you would in CI:
-
-```bash
-docker run --rm -v "$PWD:/work" -w /work ghcr.io/buzurg/sarif-converter:latest --type html input.sarif output.html
-```
-
-Running without arguments prints the bundled help text:
-
-```bash
-docker run --rm ghcr.io/buzurg/sarif-converter:latest
-```
-
-### Build Locally
-
-```bash
-docker build -t sarif-converter:latest .
-```
-
-To pin a specific upstream release during the build, override the download URL:
-
-```bash
-docker build
-```
-
-### Image Details
-
-- Linux x86_64 binary copied into a minimal scratch-based image.
-- Analyzer tooling is not included; run your analyzer separately and feed its SARIF output into `sarif-converter`.
+- **Pull requests** (`.github/workflows/test.yml`): Validates release metadata using [`pr-semver-bump`](https://github.com/jefflinse/pr-semver-bump) and pushes a preview image tagged `dev-pr-<number>` for quick testing. The workflow also exercises the published image against a sample SARIF file.
+- **Releases** (`.github/workflows/release.yml`): When a labeled pull request merges to `main`, `pr-semver-bump` bumps the semantic version, creates the tag and GitHub release, and publishes `ghcr.io/<owner>/sarif-converter:latest` plus `:<version>`.
 
 ## Publishing & Versioning
 
-- Label each pull request with `major`, `minor`, or `patch` (configurable in the workflow) so `pr-semver-bump` knows how to increment the semantic version.
-- Include release notes in the pull request description; they are published with the GitHub release when the PR merges.
-- When a labeled pull request merges into `main`, the `Release` workflow runs `pr-semver-bump` in bump mode to create the tag and GitHub release, then publishes `ghcr.io/<owner>/sarif-converter:latest` and `:<version>` using the computed version.
-- Pull requests from this repository publish a preview image tagged `dev-pr-<number>` for manual testing.
-- Pull requests from forks cannot push preview images because the token has read-only package scope.
+- Label each pull request with `major`, `minor`, or `patch` so `pr-semver-bump` knows how to increment the semantic version.
+- Include release notes in the pull request description; they are published with the GitHub release when the pull request merges.
+- Preview images are available under `ghcr.io/<owner>/sarif-converter:dev-pr-<number>` until the branch merges.
+
+## Local Docker Usage
+
+Instructions for running or building the Docker image outside of GitHub Actions live in [`DOCKER.md`](DOCKER.md).

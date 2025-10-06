@@ -32,5 +32,5 @@ runs:
           "${{ inputs.output }}"
       shell: bash
 branding:
-  icon: 'file-text'
-  color: 'blue'
+  icon: 'crosshair'
+  color: 'orange'
