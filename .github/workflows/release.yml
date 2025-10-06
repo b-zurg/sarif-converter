@@ -8,66 +8,29 @@ on:
 permissions:
   contents: write
   packages: write
+  issues: read
+  pull-requests: read
 
 jobs:
-  create-release-tag:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: dorny/paths-filter@v3
-        id: changes
+      - name: Bump version and tag
+        id: bump
+        uses: jefflinse/pr-semver-bump@v1.6.0
         with:
-          filters: |
-            version:
-              - 'VERSION'
-
-      - name: Skip release when VERSION unchanged
-        if: steps.changes.outputs.version != 'true'
-        run: echo "VERSION not modified; skipping release pipeline"
-
-      - name: Validate version bump
-        if: steps.changes.outputs.version == 'true'
-        id: version
-        run: |
-          set -euo pipefail
-          CURRENT=$(tr -d "\n\r" < VERSION)
-          if [[ -z "$CURRENT" ]]; then
-            echo "VERSION file is empty" >&2
-            exit 1
-          fi
-          PREVIOUS=$(git show HEAD^:VERSION 2>/dev/null || echo "")
-          if [[ -n "$PREVIOUS" ]]; then
-            if [[ "$CURRENT" == "$PREVIOUS" ]]; then
-              echo "VERSION must change on release" >&2
-              exit 1
-            fi
-            HIGHEST=$(printf '%s\n%s\n' "$PREVIOUS" "$CURRENT" | sort -V | tail -n1)
-            if [[ "$HIGHEST" != "$CURRENT" ]]; then
-              echo "VERSION must increase (previous $PREVIOUS, current $CURRENT)" >&2
-              exit 1
-            fi
-          fi
-          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub tag and release
-        if: steps.changes.outputs.version == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.version.outputs.version }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; skipping creation"
-            exit 0
-          fi
-          gh release create "$TAG" \
-            --title "Release $TAG" \
-            --generate-notes
+          mode: bump
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          major-label: major
+          minor-label: minor
+          patch-label: patch
 
       - name: Log in to GHCR
-        if: steps.changes.outputs.version == 'true'
+        if: steps.bump.outputs.skipped != 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -75,11 +38,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push release image
-        if: steps.changes.outputs.version == 'true'
+        if: steps.bump.outputs.skipped != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/sarif-converter:latest
-            ghcr.io/${{ github.repository_owner }}/sarif-converter:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/sarif-converter:${{ steps.bump.outputs.version }}

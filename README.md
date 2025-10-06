@@ -66,8 +66,8 @@ docker build
 
 ## Publishing & Versioning
 
-- Update the `VERSION` file with the semantic version (for example `0.9.5`) before merging to `main`.
-- Pull requests must bump `VERSION` higher than the value on the target branch; CI fails otherwise.
-- On pushes to `main`, CI publishes `ghcr.io/<owner>/sarif-converter:latest` and `:v<version>`.
-- Pull requests from this repository publish a preview tag `dev-<version>` derived from the `VERSION` file and overwrite the same tag on subsequent updates.
+- Label each pull request with `major`, `minor`, or `patch` (configurable in the workflow) so `pr-semver-bump` knows how to increment the semantic version.
+- Include release notes in the pull request description; they are published with the GitHub release when the PR merges.
+- When a labeled pull request merges into `main`, the `Release` workflow runs `pr-semver-bump` in bump mode to create the tag and GitHub release, then publishes `ghcr.io/<owner>/sarif-converter:latest` and `:<version>` using the computed version.
+- Pull requests from this repository publish a preview image tagged `dev-pr-<number>` for manual testing.
 - Pull requests from forks cannot push preview images because the token has read-only package scope.
