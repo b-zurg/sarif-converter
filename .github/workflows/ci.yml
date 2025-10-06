@@ -33,7 +33,15 @@ jobs:
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
+      - name: Debug versions
+        run: |
+          echo "Base branch: ${{ github.event.pull_request.base.ref }}"
+          echo "Head branch: ${{ github.head_ref || github.ref_name }}"
+          echo "--- HEAD ./VERSION ---"
+          cat ./VERSION || echo "(missing)"
+          echo "--- BASE ./VERSION ---"
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          git show origin/${{ github.event.pull_request.base.ref }}:./VERSION || echo "(missing)"
       - name: Check version bump
         uses: rayepps/require-semver-bump@v1
         with:
